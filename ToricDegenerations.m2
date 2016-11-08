@@ -251,6 +251,7 @@ mapMaximalCones=(newR,newM,newL,R4,M4,L4)->(
      );
      --creates a list the maximal cones of the original tropical 
      --variety but each cone is represented by the facets
+     
      i=0;
      s:=0;
      c:=0;
