@@ -167,7 +167,7 @@ scanInitialIdeals(TropicalCycle,Ideal):=opt->(T,I)->(
 findInitialIdeals=method(Options => {
 	minConvention=>true});
 findInitialIdeals(TropicalCycle,Ideal):=opt->(T,I)->(
-    findInitialIdeals(computeWeightVectors(T,opt.minConvention),I)
+    findInitialIdeals(computeWeightVectors(T,minConvention=>opt.minConvention),I)
     )
 findInitialIdeals(List,Ideal):=opt->(L,I)->(
 allIdeals:={};
@@ -183,6 +183,7 @@ i=i+1;
 );
 return allIdeals
 )
+
 
 --input the list of weight vectors and the ideal
 --output all the initial ideals
@@ -246,6 +247,7 @@ return MissingBinomials
 
 --computes the ideal I' as defined in the paper
 --L is the list of binomials,V is the set of new variables ,H list of homogenizing variables,I old ideal
+--MODIFY SO THAT YOU DON'T ADD USELESS HOMOGENIZING VARIABLES
 computeModifiedIdeal=(L,V,H,I)->(
 i:=0;
 R:=QQ[gens ring I,V,H];
@@ -256,7 +258,9 @@ A:=gens R;
 J:=sub(I,R);
 
 for i from 0 to #L-1 do(
-	J=homogenize(J+ideal((gens R)_{n+i}-{sub(L_i,R)}),A_(n+k+i));
+    	if #H==0 then (J=J+ideal((gens R)_{n+i}-{sub(L_i,R)}))
+	else(
+	J=homogenize(J+ideal((gens R)_{n+i}-{sub(L_i,R)}),A_(n+k+i)));
 	);
   return sub(J,R);
   )
@@ -370,6 +374,49 @@ findToricDegenerations(Ideal):=opt->(I)->(
     )
     )
     )
+
+
+
+findToricDegenerations(List,Ideal):=opt->(L,I)->(
+       if isHomogeneous(I)==false then print "The ideal I is not homogeneous,please homegenize before
+       using this function"
+       else(
+       	   
+	   ToricOutput:=scanInitialIdeals(L,I,minConvention=>opt.minConvention);
+	   if (ToricOutput)_0>0
+	   then return ToricOutput 
+       	   else ( 
+	       print "There are no toric degenerations, Re-embedding in process";
+	       MissingBinomials:=findMissingBinomials(getNonPrimeIdeals(ToricOutput_1));
+	       print MissingBinomials;
+	       n:=#MissingBinomials;
+	       Y:=symbol Y;
+	       H:=symbol H;
+	       I':=computeModifiedIdeal(MissingBinomials,toList(Y_1..Y_n),toList(H_1..H_n),I);
+	       print toString I';
+	       
+	       --there is a trick since gfan starting cone does not work,hence I use 
+	       --gfan_bruteforce pretending that I' is not prime
+	       ToricOutput':={};
+	       T':={};
+	       if opt.bruteForce==true then(
+	       T'=tropicalVariety(I',Prime=>false);
+	       ToricOutput'=scanInitialIdeals(computeWeightVectors(T'),I');)
+	       else 
+	       ( T'=tropicalVariety(I');
+	       ToricOutput'=scanInitialIdeals(computeWeightVectors(T'),I'););
+	       return (ToricOutput',T')
+	           
+    )
+    )
+    )
+    
+    
+    
+findToricDegenerations(TropicalCycle,Ideal):=opt->(T,I)->(
+      findToricDegenerations(computeWeightVectors(T),I,minConvention=>opt.minConvention)
+    )
+    
 
  
 
@@ -732,6 +779,9 @@ doc ///
 	  of I', the HashTable created by scannInitialIdeals and the tropicalization trop(V(I')).
 	  Note that as in the case of computeModifiedIdeal, the ideal I' has new variables of the form
 	  Y_i, H_i, hence these should not be used in the input ideal.
+    
+     
+     
 ///	    
 doc ///
     Key 
